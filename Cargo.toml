@@ -2,8 +2,7 @@
 resolver = "2"
 
 members = [
-    "dummy-relying-party",
-    "dummy-issuer",
+    "issuer",
     "rust-packages/ic-verifiable-credentials",
 ]
 

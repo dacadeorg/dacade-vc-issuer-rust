@@ -9,7 +9,7 @@ This repository contains a set of libraries to manage verifiable credentials whe
 ## Projects
 
 - [Dummy Relying Party](./dummy-relying-party/README.md). A canister that provides a dummy relying party to request any kind of credentials.
-- [Dummy Issuer](./dummy-issuer/README.md). A canister is a dummy issuer to issue any kind of credentials.
+- [Dummy Issuer](./issuer/README.md). A canister is a dummy issuer to issue any kind of credentials.
 
 ### Test Projects in Mainnet
 

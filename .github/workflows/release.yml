@@ -1,7 +1,7 @@
 on:
   push:
     tags:
-      - 'release-*'
+      - "release-*"
 
 jobs:
   release:
@@ -26,10 +26,10 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: 'Build Issuer'
-        run: ./dummy-issuer/build.sh
+      - name: "Build Issuer"
+        run: ./issuer/build.sh
 
-      - name: 'Build Relying Party'
+      - name: "Build Relying Party"
         run: ./dummy-relying-party/build.sh
 
       - name: Create Release
@@ -59,7 +59,7 @@ jobs:
               repo: "verifiable-credentials-sdk",
               release_id: ${{ steps.create-release.outputs.result }},
               name: "dummy_issuer.wasm.gz",
-              data: require('fs').readFileSync('./dummy-issuer/dummy_issuer.wasm.gz'),
+              data: require('fs').readFileSync('./issuer/dummy_issuer.wasm.gz'),
             });
 
       - name: Upload Issuer Interface
@@ -71,7 +71,7 @@ jobs:
               repo: "verifiable-credentials-sdk",
               release_id: ${{ steps.create-release.outputs.result }},
               name: "dummy_issuer.did",
-              data: require('fs').readFileSync('./dummy-issuer/dummy_issuer.did'),
+              data: require('fs').readFileSync('./issuer/dummy_issuer.did'),
             });
 
       - name: Upload Relying Party Wasm

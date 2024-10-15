@@ -21,7 +21,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 
-const ISSUER_URL: &str = "https://dummy-issuer.vc";
+const ISSUER_URL: &str = "https://issuer.vc";
 const CREDENTIAL_URL_PREFIX: &str = "data:text/plain;charset=UTF-8,";
 const MINUTE_NS: u64 = 60 * 1_000_000_000;
 // The expiration of issued verifiable credentials.
