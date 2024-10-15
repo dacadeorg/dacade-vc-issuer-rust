@@ -1,6 +1,6 @@
-# Dummy Issuer
+# Issuer
 
-This canister is a dummy issuer to issue any kind of credentials.
+This canister is an issuer to issue any kind of credentials.
 
 It implements the issuer API according to the spec but without any verification nor validation.
 
