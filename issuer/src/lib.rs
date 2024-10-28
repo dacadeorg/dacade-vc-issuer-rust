@@ -1,3 +1,5 @@
+use ic_cdk::export_candid;
+use crate::init_upgrade::SettingsInput;
 mod init_upgrade;
 use base64::Engine;
 use candid::{candid_method, Principal};
@@ -43,7 +45,7 @@ thread_local! {
         let mut map = HashMap::new();
         map.insert("TS101".to_string(), HashSet::new());
         map.insert("TS201".to_string(), HashSet::new());
-        map.insert("Rust101".to_string(), HashSet::new());
+        map.insert("RUST101".to_string(), HashSet::new());
         map.insert("AI101".to_string(), HashSet::new());
         map.insert("ICVR".to_string(), HashSet::new());
         map
@@ -89,12 +91,17 @@ pub fn format_credential_spec(spec: &CredentialSpec) -> String {
 
 #[update]
 #[candid_method]
-fn add_course_completion(course_id: String, user_id: Principal) {
+fn add_course_completion(course_id: String, user_id: Principal) -> Result<(), String> {
+    let course_id_up = course_id.to_uppercase();
     COURSE_COMPLETIONS.with(|completions| {
-        if let Some(users) = completions.borrow_mut().get_mut(&course_id) {
+        let mut completions = completions.borrow_mut();
+        if let Some(users) = completions.get_mut(&course_id_up) {
             users.insert(user_id);
+            Ok(())
+        } else {
+            Err(format!("Course '{}' not found", course_id))
         }
-    });
+    })
 }
 
 #[query]
@@ -302,3 +309,4 @@ fn get_credential(req: GetCredentialRequest) -> Result<IssuedCredentialData, Iss
         vc_jwt_to_jws(&credential_jwt, &CANISTER_SIG_PK, &sig).expect("failed constructing JWS");
     Result::<IssuedCredentialData, IssueCredentialError>::Ok(IssuedCredentialData { vc_jws })
 }
+export_candid!();
