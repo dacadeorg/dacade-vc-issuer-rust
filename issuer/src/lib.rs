@@ -1,3 +1,4 @@
+mod init_upgrade;
 use base64::Engine;
 use candid::{candid_method, Principal};
 use ic_canister_sig_creation::signature_map::{CanisterSigInputs, SignatureMap, LABEL_SIG};
@@ -17,6 +18,7 @@ use ic_verifiable_credentials::{
     vc_jwt_to_jws, vc_signing_input, AliasTuple, CredentialParams,
     VC_SIGNING_INPUT_DOMAIN
 };
+use init_upgrade::Settings;
 use lazy_static::lazy_static;
 use serde_bytes::ByteBuf;
 use serde_json::Value;
@@ -29,12 +31,6 @@ const CREDENTIAL_URL_PREFIX: &str = "data:text/plain;charset=UTF-8,";
 const MINUTE_NS: u64 = 60 * 1_000_000_000;
 // The expiration of issued verifiable credentials.
 const VC_EXPIRATION_PERIOD_NS: u64 = 15 * MINUTE_NS;
-
-
-pub struct Settings {
-    pub ic_root_key_raw: Vec<u8>,
-    pub ii_canister_id: Principal,
-}
 
 thread_local! {
     /// Non-stable structures
