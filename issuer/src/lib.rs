@@ -32,7 +32,7 @@ thread_local! {
     /// Non-stable structures
     // Canister signatures
     static SIGNATURES : RefCell<SignatureMap> = RefCell::new(SignatureMap::default());
-    static COURSE_COMPLETION : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
+    static COURSE_COMPLETIONS : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
         let mut map = HashMap::new();
         map.insert("TS101".to_string(), HashSet::new());
         map.insert("TS201".to_string(), HashSet::new());
@@ -78,6 +78,28 @@ pub fn format_credential_spec(spec: &CredentialSpec) -> String {
     }
 
     description
+}
+
+#[update]
+#[candid_method]
+fn add_course_completion(course_id: String, user_id: Principal) {
+    COURSE_COMPLETIONS.with(|completions| {
+        if let Some(users) = completions.borrow_mut().get_mut(&course_id) {
+            users.insert(user_id);
+        }
+    });
+}
+
+#[query]
+#[candid_method]
+fn has_completed_course(course_id: String, user_id: Principal) -> bool {
+    COURSE_COMPLETIONS.with(|completions| {
+        if let Some(users) = completions.borrow().get(&course_id) {
+            users.contains(&user_id)
+        } else {
+            false
+        }
+    })
 }
 
 #[update]
