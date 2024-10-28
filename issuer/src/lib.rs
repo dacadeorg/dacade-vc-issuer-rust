@@ -20,6 +20,7 @@ use serde_bytes::ByteBuf;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 
 const ISSUER_URL: &str = "https://dacade.org";
 const CREDENTIAL_URL_PREFIX: &str = "data:text/plain;charset=UTF-8,";
@@ -31,6 +32,15 @@ thread_local! {
     /// Non-stable structures
     // Canister signatures
     static SIGNATURES : RefCell<SignatureMap> = RefCell::new(SignatureMap::default());
+    static COURSE_COMPLETION : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
+        let mut map = HashMap::new();
+        map.insert("TS101".to_string(), HashSet::new());
+        map.insert("TS201".to_string(), HashSet::new());
+        map.insert("Rust101".to_string(), HashSet::new());
+        map.insert("AI101".to_string(), HashSet::new());
+        map.insert("ICVR".to_string(), HashSet::new());
+        map
+    })
 }
 
 lazy_static! {
