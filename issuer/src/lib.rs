@@ -3,17 +3,19 @@ use candid::{candid_method, Principal};
 use ic_canister_sig_creation::signature_map::{CanisterSigInputs, SignatureMap, LABEL_SIG};
 use ic_canister_sig_creation::CanisterSigPublicKey;
 use ic_cdk::api::{set_certified_data, time};
+use ic_cdk::caller;
 use ic_cdk_macros::{query, update};
 use ic_certification::{labeled_hash, Hash};
 use ic_verifiable_credentials::issuer_api::{
     ArgumentValue, CredentialSpec, DerivationOriginData, DerivationOriginError,
     DerivationOriginRequest, GetCredentialRequest, Icrc21ConsentInfo, Icrc21Error,
     Icrc21VcConsentMessageRequest, IssueCredentialError, IssuedCredentialData,
-    PrepareCredentialRequest, PreparedCredentialData,
+    PrepareCredentialRequest, PreparedCredentialData, SignedIdAlias,
 };
 use ic_verifiable_credentials::{
-    build_credential_jwt, did_for_principal, vc_jwt_to_jws, vc_signing_input, CredentialParams,
-    VC_SIGNING_INPUT_DOMAIN,
+    build_credential_jwt, did_for_principal, get_verified_id_alias_from_jws,
+    vc_jwt_to_jws, vc_signing_input, AliasTuple, CredentialParams,
+    VC_SIGNING_INPUT_DOMAIN
 };
 use lazy_static::lazy_static;
 use serde_bytes::ByteBuf;
@@ -28,10 +30,19 @@ const MINUTE_NS: u64 = 60 * 1_000_000_000;
 // The expiration of issued verifiable credentials.
 const VC_EXPIRATION_PERIOD_NS: u64 = 15 * MINUTE_NS;
 
+
+pub struct Settings {
+    pub ic_root_key_raw: Vec<u8>,
+    pub ii_canister_id: Principal,
+}
+
 thread_local! {
     /// Non-stable structures
     // Canister signatures
     static SIGNATURES : RefCell<SignatureMap> = RefCell::new(SignatureMap::default());
+
+    static SETTINGS: RefCell<Option<Settings>> = const { RefCell::new(None) };
+
     static COURSE_COMPLETIONS : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
         let mut map = HashMap::new();
         map.insert("TS101".to_string(), HashSet::new());
@@ -177,14 +188,28 @@ fn verified_credential(subject_principal: Principal, credential_spec: &Credentia
     build_credential_jwt(params)
 }
 
-#[update]
 #[candid_method]
+#[update]
 async fn prepare_credential(
     req: PrepareCredentialRequest,
 ) -> Result<PreparedCredentialData, IssueCredentialError> {
+    let alias_tuple = get_alias_tuple(&req.signed_id_alias, &caller(), time().into())?;
+
+
     let Ok(id_alias) = get_alias_from_jwt(&req.signed_id_alias.credential_jws) else {
         return Err(internal_error("Error getting id_alias"));
     };
+
+    let user_principal: Principal  = alias_tuple.id_dapp;
+    let course_id = match get_course_id_from_spec(&req.credential_spec) {
+        Some(id) => id,
+        None => return Err(IssueCredentialError::UnsupportedCredentialSpec("Missing course ID".to_string())),
+    };
+
+    if !has_completed_course(course_id, user_principal) {
+        return Err(IssueCredentialError::UnauthorizedSubject("User has not completed the requested course".to_string()))
+    } 
+
     let credential_jwt = verified_credential(id_alias, &req.credential_spec);
     let signing_input =
         vc_signing_input(&credential_jwt, &CANISTER_SIG_PK).expect("failed getting signing_input");
@@ -198,6 +223,45 @@ async fn prepare_credential(
     Ok(PreparedCredentialData {
         prepared_context: Some(ByteBuf::from(credential_jwt.as_bytes())),
     })
+}
+
+/// Verifies the ID alias from the signed JWT and returns the alias tuple.
+///
+/// This function checks the validity of the provided JWS and ensures it matches the expected subject.
+pub fn get_alias_tuple(
+    alias: &SignedIdAlias,
+    expected_vc_subject: &Principal,
+    current_time_ns: u128,
+) -> Result<AliasTuple, IssueCredentialError> {
+    SETTINGS.with_borrow(|settings_opt| {
+        let settings = settings_opt
+            .as_ref()
+            .expect("Settings should be initialized");
+
+        get_verified_id_alias_from_jws(
+            &alias.credential_jws,
+            expected_vc_subject,
+            &settings.ii_canister_id,
+            &settings.ic_root_key_raw,
+            current_time_ns,
+        )
+        .map_err(|_| {
+            IssueCredentialError::UnauthorizedSubject("JWS verification failed".to_string())
+        })
+    })
+}
+
+fn get_course_id_from_spec(credential_spec: &CredentialSpec) -> Option<String> {
+    // Check if the arguments field is Some and contains the HashMap
+    if let Some(arguments) = &credential_spec.arguments {
+        // Look for the course_id key in the arguments
+        if let Some(ArgumentValue::String(course_id)) = arguments.get("course_id") {
+            // Return the course ID if found
+            return Some(course_id.clone());
+        }
+    }
+    // Return None if the course ID is not found
+    None
 }
 
 #[query]
