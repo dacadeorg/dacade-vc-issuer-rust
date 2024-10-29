@@ -65,7 +65,7 @@ export interface _SERVICE {
   'add_course_completion' : ActorMethod<[string], Result>,
   'derivation_origin' : ActorMethod<[DerivationOriginRequest], Result_1>,
   'get_credential' : ActorMethod<[GetCredentialRequest], Result_2>,
-  'has_completed_course' : ActorMethod<[string, Principal], string>,
+  'has_completed_course' : ActorMethod<[string, Principal], boolean>,
   'prepare_credential' : ActorMethod<[PrepareCredentialRequest], Result_3>,
   'vc_consent_message' : ActorMethod<[Icrc21VcConsentMessageRequest], Result_4>,
 }

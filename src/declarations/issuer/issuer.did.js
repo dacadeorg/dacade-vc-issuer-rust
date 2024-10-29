@@ -79,7 +79,7 @@ export const idlFactory = ({ IDL }) => {
     'get_credential' : IDL.Func([GetCredentialRequest], [Result_2], ['query']),
     'has_completed_course' : IDL.Func(
         [IDL.Text, IDL.Principal],
-        [IDL.Text],
+        [IDL.Bool],
         [],
       ),
     'prepare_credential' : IDL.Func([PrepareCredentialRequest], [Result_3], []),

@@ -98,7 +98,7 @@ fn add_course_completion(course_id: String) -> Result<String, String> {
         let mut completions = completions.borrow_mut();
         if let Some(users) = completions.get_mut(&course_id_up) {
             users.insert(user_id);
-            Ok(String::from(format!(" course completion for '{}'  ", user_id.to_text())))
+            Ok(format!("Course completion added for '{}'  ", user_id.to_text()))
         } else {
             Err(format!("Course '{}' not found", course_id))
         }
@@ -213,8 +213,8 @@ async fn prepare_credential(
 
     course_id = course_id.to_uppercase();
 
-    if !has_completed_course(course_id, user_principal) {
-        return Err(IssueCredentialError::UnauthorizedSubject("User has not completed the requested course".to_string()))
+    if !has_completed_course(course_id.clone(), user_principal) {
+        return Err(IssueCredentialError::UnauthorizedSubject(format!("User {} has not completed {}", user_principal.to_text(), &course_id.to_string())));
     } 
 
     let credential_jwt = verified_credential(id_alias, &req.credential_spec);
