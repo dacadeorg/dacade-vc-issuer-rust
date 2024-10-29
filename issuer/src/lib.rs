@@ -108,8 +108,9 @@ fn add_course_completion(course_id: String) -> Result<String, String> {
 #[query]
 #[candid_method]
 fn has_completed_course(course_id: String, user_id: Principal) -> bool {
-    COURSE_COMPLETIONS.with(|completions| {
-        if let Some(users) = completions.borrow().get(&course_id) {
+    let course_id_up = course_id.to_uppercase();
+    COURSE_COMPLETIONS.with(|completions: &RefCell<HashMap<String, HashSet<Principal>>>| {
+        if let Some(users) = completions.borrow().get(&course_id_up) {
             users.contains(&user_id)
         } else {
             false
@@ -205,10 +206,12 @@ async fn prepare_credential(
     };
 
     let user_principal: Principal  = alias_tuple.id_dapp;
-    let course_id = match get_course_id_from_spec(&req.credential_spec) {
+    let mut course_id = match get_course_id_from_spec(&req.credential_spec) {
         Some(id) => id,
         None => return Err(IssueCredentialError::UnsupportedCredentialSpec("Missing course ID".to_string())),
     };
+
+    course_id = course_id.to_uppercase();
 
     if !has_completed_course(course_id, user_principal) {
         return Err(IssueCredentialError::UnauthorizedSubject("User has not completed the requested course".to_string()))

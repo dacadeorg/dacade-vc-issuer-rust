@@ -3,7 +3,7 @@ export const idlFactory = ({ IDL }) => {
     'ii_canister_id' : IDL.Principal,
     'ic_root_key_der' : IDL.Vec(IDL.Nat8),
   });
-  const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
+  const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const DerivationOriginRequest = IDL.Record({
     'frontend_hostname' : IDL.Text,
   });
@@ -74,12 +74,12 @@ export const idlFactory = ({ IDL }) => {
     'Err' : Icrc21Error,
   });
   return IDL.Service({
-    'add_course_completion' : IDL.Func([IDL.Text, IDL.Principal], [Result], []),
+    'add_course_completion' : IDL.Func([IDL.Text], [Result], []),
     'derivation_origin' : IDL.Func([DerivationOriginRequest], [Result_1], []),
     'get_credential' : IDL.Func([GetCredentialRequest], [Result_2], ['query']),
     'has_completed_course' : IDL.Func(
         [IDL.Text, IDL.Principal],
-        [IDL.Bool],
+        [IDL.Text],
         [],
       ),
     'prepare_credential' : IDL.Func([PrepareCredentialRequest], [Result_3], []),

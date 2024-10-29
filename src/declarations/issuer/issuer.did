@@ -40,7 +40,7 @@ type PrepareCredentialRequest = record {
   credential_spec : CredentialSpec;
 };
 type PreparedCredentialData = record { prepared_context : opt blob };
-type Result = variant { Ok; Err : text };
+type Result = variant { Ok : text; Err : text };
 type Result_1 = variant {
   Ok : DerivationOriginData;
   Err : DerivationOriginError;
@@ -60,10 +60,10 @@ type SettingsInput = record {
 };
 type SignedIdAlias = record { credential_jws : text };
 service : (SettingsInput) -> {
-  add_course_completion : (text, principal) -> (Result);
+  add_course_completion : (text) -> (Result);
   derivation_origin : (DerivationOriginRequest) -> (Result_1);
   get_credential : (GetCredentialRequest) -> (Result_2) query;
-  has_completed_course : (text, principal) -> (bool);
+  has_completed_course : (text, principal) -> (text);
   prepare_credential : (PrepareCredentialRequest) -> (Result_3);
   vc_consent_message : (Icrc21VcConsentMessageRequest) -> (Result_4);
 }

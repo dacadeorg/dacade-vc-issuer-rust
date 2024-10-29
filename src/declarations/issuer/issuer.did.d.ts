@@ -46,7 +46,7 @@ export interface PrepareCredentialRequest {
 export interface PreparedCredentialData {
   'prepared_context' : [] | [Uint8Array | number[]],
 }
-export type Result = { 'Ok' : null } |
+export type Result = { 'Ok' : string } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : DerivationOriginData } |
   { 'Err' : DerivationOriginError };
@@ -62,10 +62,10 @@ export interface SettingsInput {
 }
 export interface SignedIdAlias { 'credential_jws' : string }
 export interface _SERVICE {
-  'add_course_completion' : ActorMethod<[string, Principal], Result>,
+  'add_course_completion' : ActorMethod<[string], Result>,
   'derivation_origin' : ActorMethod<[DerivationOriginRequest], Result_1>,
   'get_credential' : ActorMethod<[GetCredentialRequest], Result_2>,
-  'has_completed_course' : ActorMethod<[string, Principal], boolean>,
+  'has_completed_course' : ActorMethod<[string, Principal], string>,
   'prepare_credential' : ActorMethod<[PrepareCredentialRequest], Result_3>,
   'vc_consent_message' : ActorMethod<[Icrc21VcConsentMessageRequest], Result_4>,
 }
