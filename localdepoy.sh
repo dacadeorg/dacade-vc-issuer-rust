@@ -12,7 +12,7 @@ rootkey_did=$(dfx ping local \
     
 echo "Public key: ${rootkey_did}"
 
-II_CANISTER_ID="rdmx6-jaaaa-aaaaa-aaadq-cai"
+II_CANISTER_ID="be2us-64aaa-aaaaa-qaabq-cai"
 
 echo "${II_CANISTER_ID}"
 
