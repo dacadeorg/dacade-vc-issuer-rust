@@ -1,25 +1,32 @@
+use ic_cdk::export_candid;
+use crate::init_upgrade::SettingsInput;
+mod init_upgrade;
 use base64::Engine;
 use candid::{candid_method, Principal};
 use ic_canister_sig_creation::signature_map::{CanisterSigInputs, SignatureMap, LABEL_SIG};
 use ic_canister_sig_creation::CanisterSigPublicKey;
 use ic_cdk::api::{set_certified_data, time};
+use ic_cdk::caller;
 use ic_cdk_macros::{query, update};
 use ic_certification::{labeled_hash, Hash};
 use ic_verifiable_credentials::issuer_api::{
     ArgumentValue, CredentialSpec, DerivationOriginData, DerivationOriginError,
     DerivationOriginRequest, GetCredentialRequest, Icrc21ConsentInfo, Icrc21Error,
     Icrc21VcConsentMessageRequest, IssueCredentialError, IssuedCredentialData,
-    PrepareCredentialRequest, PreparedCredentialData,
+    PrepareCredentialRequest, PreparedCredentialData, SignedIdAlias,
 };
 use ic_verifiable_credentials::{
-    build_credential_jwt, did_for_principal, vc_jwt_to_jws, vc_signing_input, CredentialParams,
-    VC_SIGNING_INPUT_DOMAIN,
+    build_credential_jwt, did_for_principal, get_verified_id_alias_from_jws,
+    vc_jwt_to_jws, vc_signing_input, AliasTuple, CredentialParams,
+    VC_SIGNING_INPUT_DOMAIN
 };
+use init_upgrade::Settings;
 use lazy_static::lazy_static;
 use serde_bytes::ByteBuf;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 
 const ISSUER_URL: &str = "https://dacade.org";
 const CREDENTIAL_URL_PREFIX: &str = "data:text/plain;charset=UTF-8,";
@@ -31,6 +38,18 @@ thread_local! {
     /// Non-stable structures
     // Canister signatures
     static SIGNATURES : RefCell<SignatureMap> = RefCell::new(SignatureMap::default());
+
+    static SETTINGS: RefCell<Option<Settings>> = const { RefCell::new(None) };
+
+    static COURSE_COMPLETIONS : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
+        let mut map = HashMap::new();
+        map.insert("TS101".to_string(), HashSet::new());
+        map.insert("TS201".to_string(), HashSet::new());
+        map.insert("RUST101".to_string(), HashSet::new());
+        map.insert("AI101".to_string(), HashSet::new());
+        map.insert("ICVR".to_string(), HashSet::new());
+        map
+    })
 }
 
 lazy_static! {
@@ -68,6 +87,35 @@ pub fn format_credential_spec(spec: &CredentialSpec) -> String {
     }
 
     description
+}
+
+#[update]
+#[candid_method]
+fn add_course_completion(course_id: String) -> Result<String, String> {
+    let course_id_up = course_id.to_uppercase();
+    let user_id = caller();
+    COURSE_COMPLETIONS.with(|completions| {
+        let mut completions = completions.borrow_mut();
+        if let Some(users) = completions.get_mut(&course_id_up) {
+            users.insert(user_id);
+            Ok(format!("Course completion added for '{}'  ", user_id.to_text()))
+        } else {
+            Err(format!("Course '{}' not found", course_id))
+        }
+    })
+}
+
+#[query]
+#[candid_method]
+fn has_completed_course(course_id: String, user_id: Principal) -> bool {
+    let course_id_up = course_id.to_uppercase();
+    COURSE_COMPLETIONS.with(|completions: &RefCell<HashMap<String, HashSet<Principal>>>| {
+        if let Some(users) = completions.borrow().get(&course_id_up) {
+            users.contains(&user_id)
+        } else {
+            false
+        }
+    })
 }
 
 #[update]
@@ -145,14 +193,30 @@ fn verified_credential(subject_principal: Principal, credential_spec: &Credentia
     build_credential_jwt(params)
 }
 
-#[update]
 #[candid_method]
+#[update]
 async fn prepare_credential(
     req: PrepareCredentialRequest,
 ) -> Result<PreparedCredentialData, IssueCredentialError> {
+    let alias_tuple = get_alias_tuple(&req.signed_id_alias, &caller(), time().into())?;
+
+
     let Ok(id_alias) = get_alias_from_jwt(&req.signed_id_alias.credential_jws) else {
         return Err(internal_error("Error getting id_alias"));
     };
+
+    let user_principal: Principal  = alias_tuple.id_dapp;
+    let mut course_id = match get_course_id_from_spec(&req.credential_spec) {
+        Some(id) => id,
+        None => return Err(IssueCredentialError::UnsupportedCredentialSpec("Missing course ID".to_string())),
+    };
+
+    course_id = course_id.to_uppercase();
+
+    if !has_completed_course(course_id.clone(), user_principal) {
+        return Err(IssueCredentialError::UnauthorizedSubject(format!("User {} has not completed {}", user_principal.to_text(), &course_id.to_string())));
+    } 
+
     let credential_jwt = verified_credential(id_alias, &req.credential_spec);
     let signing_input =
         vc_signing_input(&credential_jwt, &CANISTER_SIG_PK).expect("failed getting signing_input");
@@ -166,6 +230,45 @@ async fn prepare_credential(
     Ok(PreparedCredentialData {
         prepared_context: Some(ByteBuf::from(credential_jwt.as_bytes())),
     })
+}
+
+/// Verifies the ID alias from the signed JWT and returns the alias tuple.
+///
+/// This function checks the validity of the provided JWS and ensures it matches the expected subject.
+pub fn get_alias_tuple(
+    alias: &SignedIdAlias,
+    expected_vc_subject: &Principal,
+    current_time_ns: u128,
+) -> Result<AliasTuple, IssueCredentialError> {
+    SETTINGS.with_borrow(|settings_opt| {
+        let settings = settings_opt
+            .as_ref()
+            .expect("Settings should be initialized");
+
+        get_verified_id_alias_from_jws(
+            &alias.credential_jws,
+            expected_vc_subject,
+            &settings.ii_canister_id,
+            &settings.ic_root_key_raw,
+            current_time_ns,
+        )
+        .map_err(|_| {
+            IssueCredentialError::UnauthorizedSubject("JWS verification failed".to_string())
+        })
+    })
+}
+
+fn get_course_id_from_spec(credential_spec: &CredentialSpec) -> Option<String> {
+    // Check if the arguments field is Some and contains the HashMap
+    if let Some(arguments) = &credential_spec.arguments {
+        // Look for the course_id key in the arguments
+        if let Some(ArgumentValue::String(course_id)) = arguments.get("course_id") {
+            // Return the course ID if found
+            return Some(course_id.clone());
+        }
+    }
+    // Return None if the course ID is not found
+    None
 }
 
 #[query]
@@ -210,3 +313,4 @@ fn get_credential(req: GetCredentialRequest) -> Result<IssuedCredentialData, Iss
         vc_jwt_to_jws(&credential_jwt, &CANISTER_SIG_PK, &sig).expect("failed constructing JWS");
     Result::<IssuedCredentialData, IssueCredentialError>::Ok(IssuedCredentialData { vc_jws })
 }
+export_candid!();
