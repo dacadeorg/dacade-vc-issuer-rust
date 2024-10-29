@@ -91,13 +91,14 @@ pub fn format_credential_spec(spec: &CredentialSpec) -> String {
 
 #[update]
 #[candid_method]
-fn add_course_completion(course_id: String, user_id: Principal) -> Result<(), String> {
+fn add_course_completion(course_id: String) -> Result<String, String> {
     let course_id_up = course_id.to_uppercase();
+    let user_id = caller();
     COURSE_COMPLETIONS.with(|completions| {
         let mut completions = completions.borrow_mut();
         if let Some(users) = completions.get_mut(&course_id_up) {
             users.insert(user_id);
-            Ok(())
+            Ok(String::from(format!(" course completion for '{}'  ", user_id.to_text())))
         } else {
             Err(format!("Course '{}' not found", course_id))
         }
