@@ -200,7 +200,6 @@ async fn prepare_credential(
 ) -> Result<PreparedCredentialData, IssueCredentialError> {
     let alias_tuple = get_alias_tuple(&req.signed_id_alias, &caller(), time().into())?;
 
-
     let Ok(id_alias) = get_alias_from_jwt(&req.signed_id_alias.credential_jws) else {
         return Err(internal_error("Error getting id_alias"));
     };
@@ -245,15 +244,17 @@ pub fn get_alias_tuple(
             .as_ref()
             .expect("Settings should be initialized");
 
+        let ii_canister_id = Principal::from_text("rdmx6-jaaaa-aaaaa-aaadq-cai").unwrap();
+
         get_verified_id_alias_from_jws(
             &alias.credential_jws,
             expected_vc_subject,
-            &settings.ii_canister_id,
+            &ii_canister_id,
             &settings.ic_root_key_raw,
             current_time_ns,
         )
         .map_err(|_| {
-            IssueCredentialError::UnauthorizedSubject("JWS verification failed".to_string())
+            IssueCredentialError::UnauthorizedSubject( format!("Expected caller {}", expected_vc_subject.to_text()))
         })
     })
 }
