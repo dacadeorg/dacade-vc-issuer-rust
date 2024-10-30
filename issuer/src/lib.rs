@@ -118,6 +118,18 @@ fn has_completed_course(course_id: String, user_id: Principal) -> bool {
     })
 }
 
+#[query]
+#[candid_method]
+fn get_ii_id() -> String {
+    SETTINGS.with_borrow(|settings_opt| {
+        let settings = settings_opt
+            .as_ref()
+            .expect("Settings should be initialized");
+        
+        return String::from(settings.ii_canister_id.to_text());
+    })
+}
+
 #[update]
 #[candid_method]
 async fn vc_consent_message(
