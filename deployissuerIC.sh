@@ -12,9 +12,9 @@ rootkey_did=$(dfx ping ic \
     
 echo "Public key: ${rootkey_did}"
 
-II_CANISTER_ID="rdmx6-jaaaa-aaaaa-aaadq-cai"
+II_CANISTER_ID=$(dfx canister id internet_identity --network ic)
 
-echo "${II_CANISTER_ID}"
+echo "Internet identity canister: ${II_CANISTER_ID}"
 
 dfx deploy issuer --network ic --argument "( \
     record { \

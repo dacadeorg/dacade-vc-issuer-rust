@@ -77,6 +77,7 @@ export const idlFactory = ({ IDL }) => {
     'add_course_completion' : IDL.Func([IDL.Text], [Result], []),
     'derivation_origin' : IDL.Func([DerivationOriginRequest], [Result_1], []),
     'get_credential' : IDL.Func([GetCredentialRequest], [Result_2], ['query']),
+    'get_ii_id' : IDL.Func([], [IDL.Text], []),
     'has_completed_course' : IDL.Func(
         [IDL.Text, IDL.Principal],
         [IDL.Bool],
