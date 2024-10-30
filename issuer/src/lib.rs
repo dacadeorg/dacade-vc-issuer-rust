@@ -275,7 +275,7 @@ fn get_course_id_from_spec(credential_spec: &CredentialSpec) -> Option<String> {
     // Check if the arguments field is Some and contains the HashMap
     if let Some(arguments) = &credential_spec.arguments {
         // Look for the course_id key in the arguments
-        if let Some(ArgumentValue::String(course_id)) = arguments.get("course_id") {
+        if let Some(ArgumentValue::String(course_id)) = arguments.get("course") {
             // Return the course ID if found
             return Some(course_id.clone());
         }
