@@ -43,11 +43,11 @@ thread_local! {
 
     static COURSE_COMPLETIONS : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
         let mut map = HashMap::new();
-        map.insert("TS101".to_string(), HashSet::new());
-        map.insert("TS201".to_string(), HashSet::new());
-        map.insert("RUST101".to_string(), HashSet::new());
-        map.insert("AI101".to_string(), HashSet::new());
-        map.insert("ICVR".to_string(), HashSet::new());
+        map.insert("typescript-smart-contract-101".to_string(), HashSet::new());
+        map.insert("typescript-development-201".to_string(), HashSet::new());
+        map.insert("rust-smart-contract-101".to_string(), HashSet::new());
+        map.insert("ai-dapp-development-101".to_string(), HashSet::new());
+        map.insert("icvr-development-101".to_string(), HashSet::new());
         map
     })
 }
