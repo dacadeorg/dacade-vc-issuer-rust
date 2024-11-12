@@ -43,11 +43,11 @@ thread_local! {
 
     static COURSE_COMPLETIONS : RefCell<HashMap<String, HashSet<Principal>>> = RefCell::new({
         let mut map = HashMap::new();
-        map.insert("typescript-smart-contract-101".to_string(), HashSet::new());
-        map.insert("typescript-development-201".to_string(), HashSet::new());
-        map.insert("rust-smart-contract-101".to_string(), HashSet::new());
-        map.insert("ai-dapp-development-101".to_string(), HashSet::new());
-        map.insert("icvr-development-101".to_string(), HashSet::new());
+        map.insert("typescript-smart-contract-101".to_string().to_ascii_uppercase(), HashSet::new());
+        map.insert("typescript-development-201".to_string().to_ascii_uppercase(), HashSet::new());
+        map.insert("rust-smart-contract-101".to_string().to_ascii_uppercase(), HashSet::new());
+        map.insert("ai-dapp-development-101".to_string().to_ascii_uppercase(), HashSet::new());
+        map.insert("icvr-development-101".to_string().to_ascii_uppercase(), HashSet::new());
         map
     })
 }
@@ -92,7 +92,7 @@ pub fn format_credential_spec(spec: &CredentialSpec) -> String {
 #[update]
 #[candid_method]
 fn add_course_completion(course_id: String) -> Result<String, String> {
-    let course_id_up = course_id.to_uppercase();
+    let course_id_up = course_id.to_ascii_uppercase();
     let user_id = caller();
     COURSE_COMPLETIONS.with(|completions| {
         let mut completions = completions.borrow_mut();
@@ -108,7 +108,7 @@ fn add_course_completion(course_id: String) -> Result<String, String> {
 #[query]
 #[candid_method]
 fn has_completed_course(course_id: String, user_id: Principal) -> bool {
-    let course_id_up = course_id.to_uppercase();
+    let course_id_up = course_id.to_ascii_uppercase();
     COURSE_COMPLETIONS.with(|completions: &RefCell<HashMap<String, HashSet<Principal>>>| {
         if let Some(users) = completions.borrow().get(&course_id_up) {
             users.contains(&user_id)
@@ -222,7 +222,7 @@ async fn prepare_credential(
         None => return Err(IssueCredentialError::UnsupportedCredentialSpec("Missing course ID".to_string())),
     };
 
-    course_id = course_id.to_uppercase();
+    course_id = course_id.to_ascii_uppercase();
 
     if !has_completed_course(course_id.clone(), user_principal) {
         return Err(IssueCredentialError::UnauthorizedSubject(format!("User {} has not completed {}", user_principal.to_text(), &course_id.to_string())));
