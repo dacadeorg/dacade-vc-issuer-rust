@@ -48,6 +48,7 @@ thread_local! {
         map.insert("rust-smart-contract-101".to_string().to_ascii_uppercase(), HashSet::new());
         map.insert("ai-dapp-development-101".to_string().to_ascii_uppercase(), HashSet::new());
         map.insert("icvr-development-101".to_string().to_ascii_uppercase(), HashSet::new());
+        map.insert("demo".to_string().to_ascii_uppercase(), HashSet::new());
         map
     })
 }
